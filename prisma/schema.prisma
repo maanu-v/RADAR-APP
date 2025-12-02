@@ -7,14 +7,22 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  DOCTOR
+  PATIENT
+}
+
 enum SensorType {
-  PPG_RING
-  UREA_PATCH
-  FLUID_PATCH
+  THORACIC_FUSION  // ECG, Fluid, Audio
+  BIOCHEM_PATCH    // Urea, Creatinine, pH, Glucose, K+, Na+
+  SMART_RING       // SpO2, HR, PI, HRV, Skin Temp
+  BP_CUFF          // SBP, DBP, MAP
 }
 
 enum RiskLevel {
   GREEN
+  BLUE
+  YELLOW
   ORANGE
   RED
 }
@@ -24,10 +32,17 @@ model User {
   email     String   @unique
   name      String
   password  String
+  role      UserRole @default(PATIENT)
   createdAt DateTime @default(now())
 
+  // For Patients
   readings   SensorReading[]
   fusionLogs FusionLog[]
+  
+  // For Doctors (Optional: could link to patients they manage)
+  patients   User[] @relation("DoctorPatients")
+  doctor     User?  @relation("DoctorPatients", fields: [doctorId], references: [id])
+  doctorId   String?
 }
 
 model SensorReading {
@@ -39,22 +54,50 @@ model SensorReading {
 
   type SensorType
 
-  // Raw Values
-  voltage_mV  Float? // Urea
-  spo2        Float? // PPG
-  hr          Float? // PPG
-  ecw_tbw     Float? // Fluid
-  phase_angle Float? // Fluid
+  // --- 1. THORACIC FUSION (ECG + Fluid + Audio) ---
+  // ECG
+  heartRate     Float? // bpm
+  qrsDuration   Float? // ms
+  rhythm        String? // e.g. "Sinus", "AF"
+  tWave         String? // e.g. "Normal", "Peaked"
+  stSegment     String? // e.g. "Baseline", "STEMI"
+  
+  // Fluid / Bioimpedance
+  ecw_tbw       Float? 
+  phase_angle   Float? // degrees
+  
+  // Audio (PCG)
+  heartSounds   String? // e.g. "S1/S2", "S3"
+  lungSounds    String? // e.g. "Clear", "Crackles"
+  murmur        String? // e.g. "None", "Systolic"
 
-  // Processed Values
-  value_calculated Float? // e.g. Urea mg/dL
+  // --- 2. BIOCHEM PATCH ---
+  urea          Float? // mg/dL
+  creatinine    Float? // mg/dL
+  ph            Float? 
+  glucose       Float? // mg/dL
+  potassium     Float? // mmol/L
+  sodium        Float? // mmol/L
 
-  // Agent Output
+  // --- 3. SMART RING ---
+  spo2          Float? // %
+  perfusionIndex Float? 
+  hrv           Float? // ms (SDNN)
+  skinTemp      Float? // Celsius
+
+  // --- 4. BP CUFF ---
+  sbp           Float? // mmHg
+  dbp           Float? // mmHg
+  map           Float? // mmHg
+  pulsePressure Float? // mmHg
+
+  // --- PROCESSED STATUS ---
+  // The backend will only process Urea & Fluid for now, but we store risk for all if needed
   riskLevel   RiskLevel
-  explanation String? // Agent reasoning
+  explanation String? // Agent reasoning (if processed)
   trend       String? // e.g. "stable", "increasing"
 
-  // Link to Fusion (Optional, if this reading triggered a fusion event)
+  // Link to Fusion (Optional)
   fusionLogId String?
   fusionLog   FusionLog? @relation(fields: [fusionLogId], references: [id])
 }
