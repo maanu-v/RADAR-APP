@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SensorType {
+  PPG_RING
+  UREA_PATCH
+  FLUID_PATCH
+}
+
+enum RiskLevel {
+  GREEN
+  ORANGE
+  RED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+
+  readings   SensorReading[]
+  fusionLogs FusionLog[]
+}
+
+model SensorReading {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type SensorType
+
+  // Raw Values
+  voltage_mV  Float? // Urea
+  spo2        Float? // PPG
+  hr          Float? // PPG
+  ecw_tbw     Float? // Fluid
+  phase_angle Float? // Fluid
+
+  // Processed Values
+  value_calculated Float? // e.g. Urea mg/dL
+
+  // Agent Output
+  riskLevel   RiskLevel
+  explanation String? // Agent reasoning
+  trend       String? // e.g. "stable", "increasing"
+
+  // Link to Fusion (Optional, if this reading triggered a fusion event)
+  fusionLogId String?
+  fusionLog   FusionLog? @relation(fields: [fusionLogId], references: [id])
+}
+
+model FusionLog {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Fusion Output
+  finalRisk      RiskLevel
+  summary        String
+  urgentActions  String?
+  longTermAdvice String?
+
+  readings SensorReading[]
+}
