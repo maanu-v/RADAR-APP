@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Activity, ShieldCheck, Cpu, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function LandingPage() {
   return (
@@ -26,6 +27,7 @@ export default function LandingPage() {
             <Link href="#about" className="hover:text-foreground transition-colors">About</Link>
           </nav>
           <div className="flex items-center gap-4">
+            <ModeToggle />
             <Link href="/auth/login">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
