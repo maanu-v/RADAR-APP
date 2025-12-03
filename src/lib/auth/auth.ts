@@ -1,12 +1,13 @@
 import NextAuth, { CredentialsSignin } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import prisma from "../prisma"
+import bcrypt from "bcryptjs"
  
 class InvalidLoginError extends CredentialsSignin {
   code = "Invalid identifier or password"
 }
  
-export const { handlers, auth } = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
@@ -19,11 +20,16 @@ export const { handlers, auth } = NextAuth({
         const user = await prisma.user.findUnique({
             where: {
                 email: email,
-                password: password,
             }
         })
 
-        if (user) {
+        if (!user) {
+            throw new InvalidLoginError()
+        }
+
+        const isValid = await bcrypt.compare(password, user.password)
+
+        if (isValid) {
           return {
             id: user.id,
             name: user.name,
@@ -35,4 +41,12 @@ export const { handlers, auth } = NextAuth({
       },
     }),
   ],
+  pages: {
+    signIn: "/auth/login",
+  },
+  callbacks: {
+    async redirect({ url, baseUrl }) {
+      return baseUrl + "/dashboard"
+    },
+  },
 })
