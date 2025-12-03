@@ -30,7 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await bcrypt.compare(password, user.password)
 
         if (isValid) {
-          return {
+                      return {
             id: user.id,
             name: user.name,
             email: user.email,
@@ -44,9 +44,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/auth/login",
   },
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      return baseUrl + "/dashboard"
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.name = user.name
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string
+        session.user.name = token.name as string
+      }
+      return session
     },
   },
 })

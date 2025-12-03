@@ -25,9 +25,21 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const pathname = usePathname()
+
+  // Wait for session to fully load before showing dashboard
+  if (status === "loading" || !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
@@ -96,8 +108,8 @@ export default function DashboardLayout({
               <User className="w-4 h-4" />
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
-              <p className="text-xs text-muted-foreground truncate">{session?.user?.email || "Patient"}</p>
+              <p className="text-sm font-medium truncate">{session.user?.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{session.user?.email}</p>
             </div>
           </div>
           <Button 

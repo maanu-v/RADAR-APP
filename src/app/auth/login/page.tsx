@@ -12,7 +12,7 @@ import { Activity } from "lucide-react"
 import { ModeToggle } from "@/components/mode-toggle"
 
 export default function LoginPage() {
-  const [errorMessage, formAction, isPending] = useActionState(authenticate, undefined)
+  const [state, formAction, isPending] = useActionState(authenticate, undefined)
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative">
@@ -45,9 +45,9 @@ export default function LoginPage() {
               <Input id="password" name="password" type="password" required />
             </div>
 
-            {errorMessage && (
+            {state?.error && (
               <div className="text-sm text-destructive text-center font-medium">
-                {errorMessage}
+                {state.error}
               </div>
             )}
 

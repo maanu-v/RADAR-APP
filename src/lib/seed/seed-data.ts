@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma"
-import { SensorType, RiskLevel, UserRole } from "@/generated/prisma/enums"
+import { SensorType, RiskLevel, UserRole } from "@prisma/client"
 
 export async function seedPatientData(userEmail: string) {
   const user = await prisma.user.findUnique({

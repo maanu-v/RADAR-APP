@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { signIn } from "@/lib/auth/auth"
 import { AuthError } from "next-auth"
-import { UserRole } from "@/generated/prisma/enums"
+import { UserRole } from "@prisma/client"
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -69,21 +69,34 @@ export async function signup(prevState: any, formData: FormData) {
 }
 
 export async function authenticate(
-  prevState: string | undefined,
+  prevState: { error?: string; success?: boolean } | undefined,
   formData: FormData,
 ) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+  
+  if (!email || !password) {
+    return { error: "Please provide both email and password." }
+  }
+
   try {
-    await signIn("credentials", formData)
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: "/dashboard",
+    })
+    // This line won't be reached due to redirect
+    return { success: true }
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return "Invalid credentials."
+          return { error: "Invalid credentials." }
         default:
-          return "Something went wrong."
+          return { error: "Something went wrong." }
       }
     }
+    // Re-throw redirect errors
     throw error
   }
 }
-
