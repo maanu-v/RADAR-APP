@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RADAR-APP: Multi-Agent Healthcare Monitoring Platform
 
-## Getting Started
+A comprehensive healthcare monitoring system that simulates and processes sensor data (Thoracic Fusion, Biochem Patch, Smart Ring) using a multi-agent architecture to provide real-time clinical risk assessment.
 
-First, run the development server:
+## 🌟 Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This project implements a multi-agent healthcare monitoring platform using **Next.js**, **Prisma**, and **PostgreSQL**.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The system simulates three key data streams:
+- **PPG Ring**: Updates every 1 second (SpO₂, Heart Rate).
+- **Biochem Patch**: Generates voltage readings for Urea levels every 15 seconds (demo mode).
+- **Bioimpedance Patch**: Sends ECW/TBW and Phase Angle data every 15 seconds (demo mode).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### How it Works
+1. **Data Ingestion**: Raw sensor data is posted to `/api/vitals`.
+2. **Processing**: Backend converts raw signals into medical features (mg/dL, ECW/TBW), assigns risk thresholds (GREEN–RED), and calculates trends.
+3. **Multi-Agent Analysis**:
+   - **Urea Agent**: Analyzes kidney stress.
+   - **Fluid Agent**: Analyzes edema and fluid overload.
+   - **PPG Agent**: Analyzes oxygenation and heart rhythm.
+4. **Fusion Engine**: A Fusion Agent aggregates all agent outputs to determine a final unified clinical risk.
+   - *Rule*: Any RED → Final RED.
+   - *Rule*: Multiple ORANGEs → ORANGE.
+   - *Rule*: Otherwise, highest severity prevails.
+5. **Storage & UI**: Results are stored in PostgreSQL via Prisma and broadcasted to the Next.js dashboard for real-time visualization.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Features
 
-## Learn More
+- **Real-time Dashboard**: Live visualization of patient vitals and risk levels.
+- **Multi-Agent System**: Intelligent reasoning for different physiological subsystems.
+- **Role-Based Access**: Secure authentication for Doctors and Patients using **NextAuth.js**.
+- **Data Visualization**: Interactive charts and trends using **Recharts**.
+- **Dark Mode**: Fully supported UI with light/dark themes.
+- **Sensor Simulation**: Built-in simulation for testing and demonstration.
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL
+- **ORM**: [Prisma](https://www.prisma.io/)
+- **Authentication**: [NextAuth.js](https://authjs.dev/) (v5)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
+- **Icons**: Lucide React
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🏁 Getting Started
 
-## Deploy on Vercel
+### Prerequisites
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Node.js (v18+ recommended)
+- PostgreSQL (Local or Docker)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd radar_app
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup:**
+   Create a `.env` file in the root directory with the following variables:
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/radar_db"
+   AUTH_SECRET="your-secure-random-string"
+   ```
+
+4. **Database Setup:**
+   Push the schema to your database:
+   ```bash
+   npx prisma db push
+   ```
+
+5. **Seed the Database:**
+   Populate the database with initial data:
+   ```bash
+   npx tsx seed-db.ts
+   ```
+
+6. **Run the Development Server:**
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## 📂 Project Structure
+
+- `/src/app`: Next.js App Router pages and API routes.
+- `/src/components`: Reusable UI components.
+- `/prisma`: Database schema and migrations.
+- `/public`: Static assets.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.
