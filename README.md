@@ -60,7 +60,7 @@ The system simulates three key data streams:
 
 2. **Install dependencies:**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Environment Setup:**
@@ -73,18 +73,24 @@ The system simulates three key data streams:
 4. **Database Setup:**
    Push the schema to your database:
    ```bash
-   npx prisma db push
+   pnpm prisma db push
    ```
 
-5. **Seed the Database:**
+5. **View Database:**
+   Open Prisma Studio to view and manage your database:
+   ```bash
+   pnpm prisma studio
+   ```
+
+6. **Seed the Database:**
    Populate the database with initial data:
    ```bash
-   npx tsx seed-db.ts
+   pnpm tsx seed-db.ts
    ```
 
-6. **Run the Development Server:**
+7. **Run the Development Server:**
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
