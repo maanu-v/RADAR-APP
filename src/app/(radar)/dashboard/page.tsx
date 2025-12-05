@@ -10,6 +10,8 @@ import {
   Brain, 
   ChevronRight, 
   CheckCircle,
+  Zap,
+  TestTube,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -49,6 +51,112 @@ export default function Dashboard() {
             </div>
           </Card>
         </Link>
+      </section>
+
+      {/* Live Sensor Data Section */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="h-5 w-5 text-slate-400 fill-slate-400" />
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Live Sensor Data</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Urea Level */}
+          <Card className="p-6 border-0 shadow-sm bg-white relative">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Urea Level</h3>
+              <div className="flex flex-col items-end gap-2">
+                <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
+                  Blue
+                </Badge>
+                <div className="bg-blue-50 p-2 rounded-full">
+                  <TestTube className="h-4 w-4 text-blue-500" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-[-1rem]">
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">50</span>
+                <span className="text-sm text-slate-400 font-medium">mg/dL</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 mb-4">Slight elevation.</p>
+              <div className="h-1 w-full bg-blue-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 w-full" />
+              </div>
+            </div>
+          </Card>
+
+          {/* Fluid Status */}
+          <Card className="p-6 border-0 shadow-sm bg-white relative">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fluid Status</h3>
+              <div className="flex flex-col items-end gap-2">
+                <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
+                  Blue
+                </Badge>
+                <div className="bg-blue-50 p-2 rounded-full">
+                  <Droplet className="h-4 w-4 text-blue-500" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-[-1rem]">
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">0.39</span>
+                <span className="text-sm text-slate-400 font-medium">ECW/TBW</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 mb-4">Mild fluid increase.</p>
+              <div className="h-1 w-full bg-blue-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 w-full" />
+              </div>
+            </div>
+          </Card>
+
+          {/* Heart Rate */}
+          <Card className="p-6 border-0 shadow-sm bg-white relative">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Heart Rate</h3>
+              <div className="flex flex-col items-end gap-2">
+                <div className="h-[22px]"></div> {/* Spacer for alignment since no badge */}
+                <div className="bg-emerald-50 p-2 rounded-full">
+                  <Heart className="h-4 w-4 text-emerald-500" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-[-1rem]">
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">72</span>
+                <span className="text-sm text-slate-400 font-medium">bpm</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 mb-4">Sinus Rhythm</p>
+              <div className="h-1 w-full bg-emerald-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 w-full" />
+              </div>
+            </div>
+          </Card>
+
+          {/* SPO2 */}
+          <Card className="p-6 border-0 shadow-sm bg-white relative">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">SPO<sub>2</sub></h3>
+              <div className="flex flex-col items-end gap-2">
+                <div className="h-[22px]"></div> {/* Spacer for alignment since no badge */}
+                <div className="bg-emerald-50 p-2 rounded-full">
+                  <Wind className="h-4 w-4 text-emerald-500" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-[-1rem]">
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-slate-900">97</span>
+                <span className="text-sm text-slate-400 font-medium">%</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 mb-4">Optimal</p>
+              <div className="h-1 w-full bg-emerald-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 w-full" />
+              </div>
+            </div>
+          </Card>
+        </div>
       </section>
 
       {/* Biometric Systems Section */}
