@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { ChatWidget } from "@/components/chat/chat-widget"
 
 export default async function RadarLayout({
   children,
@@ -22,6 +23,7 @@ export default async function RadarLayout({
       <main className="flex-1 md:ml-72 transition-all duration-300">
         <Header userName={userName} />
         {children}
+        <ChatWidget />
       </main>
     </div>
   )

@@ -6,7 +6,8 @@ import {
   History,
   Map,
   Info,
-  Power
+  Power,
+  MessageSquare
 } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
@@ -53,6 +54,12 @@ export function Sidebar({ userName }: SidebarProps) {
           <Button variant="ghost" className="w-full justify-start gap-4 text-gray-300 hover:text-white hover:bg-white/10 h-12 text-base font-normal">
             <Info className="h-5 w-5" />
             RTAR Info
+          </Button>
+        </Link>
+        <Link href="/chatbot" className="block w-full">
+          <Button variant="ghost" className="w-full justify-start gap-4 text-gray-300 hover:text-white hover:bg-white/10 h-12 text-base font-normal">
+            <MessageSquare className="h-5 w-5" />
+            AI Assistant
           </Button>
         </Link>
 
