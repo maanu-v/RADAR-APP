@@ -27,32 +27,101 @@ const Map = dynamic(() => import("@/components/map/Map"), {
 })
 
 import { useSensorData } from "@/components/data/sensor-context"
+import { Loader2, Sparkles } from "lucide-react"
 
 // ... (keep imports)
+
+interface AIAnalysis {
+  diagnosis: string
+  diagnosisDetail: string
+  timeline: string
+  timelineReason: string
+  urgency: "High" | "Medium" | "Low"
+  actions: string[]
+}
 
 export default function ActionPage() {
   const { data } = useSensorData()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTarget, setSelectedTarget] = useState<{name: string, price: string} | null>(null)
+  
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleBook = (name: string, price: string) => {
     setSelectedTarget({ name, price })
     setIsModalOpen(true)
   }
 
+  const handleGetAnalysis = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sensorData: data }),
+      })
+
+      if (!response.ok) throw new Error('Failed to get analysis')
+
+      const analysisData = await response.json()
+      setAiAnalysis(analysisData)
+    } catch (error) {
+      console.error("Analysis failed:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Helper to determine content source (AI or Default)
+  const diagnosisTitle = aiAnalysis?.diagnosis || data.fusion.summary
+  const diagnosisDetail = aiAnalysis?.diagnosisDetail || data.fusion.longTermAdvice
+  
+  const timelineWindow = aiAnalysis?.timeline || (data.fusion.finalRisk === 'RED' ? 'Immediate' : data.fusion.finalRisk === 'ORANGE' ? '4-6 Hours' : '24 Hours')
+  const timelineReason = aiAnalysis?.timelineReason || (data.fusion.finalRisk === 'RED' ? 'Immediate action required to prevent complications.' : 'Timely intervention ensures better outcomes.')
+  const timelineUrgency = aiAnalysis?.urgency ? `${aiAnalysis.urgency} Priority` : `${data.fusion.styles.badge} Priority`
+  
+  const actionList = aiAnalysis?.actions || [
+    data.fusion.urgentActions,
+    "Prepare dialysis kit.",
+    "Book a slot in the care finder."
+  ]
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100">
-            <ArrowLeft className="h-6 w-6 text-slate-600" />
-          </Button>
-        </Link>
-        <div>
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">System Overview</p>
-          <h1 className="text-2xl font-bold text-slate-900">Action Required</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100">
+              <ArrowLeft className="h-6 w-6 text-slate-600" />
+            </Button>
+          </Link>
+          <div>
+            <p className="text-sm font-medium text-slate-500 uppercase tracking-wide">System Overview</p>
+            <h1 className="text-2xl font-bold text-slate-900">Action Required</h1>
+          </div>
         </div>
+        
+        <Button 
+          onClick={handleGetAnalysis} 
+          disabled={isLoading}
+          className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md transition-all duration-200"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Get AI Analysis
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Urgent Status Card */}
@@ -63,7 +132,7 @@ export default function ActionPage() {
             <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${data.fusion.styles.textColor.replace('text-', 'bg-')}`}></div>
             <AlertTriangle className={`h-12 w-12 ${data.fusion.styles.textColor}`} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">{data.fusion.summary}</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">{diagnosisTitle}</h2>
           <div className="flex items-center gap-2">
             <Badge className={`border-0 px-3 py-1 ${data.fusion.styles.badge === 'Normal' ? 'bg-emerald-100 text-emerald-700' : data.fusion.styles.badge === 'Advisory' ? 'bg-blue-100 text-blue-700' : data.fusion.styles.badge === 'Warning' ? 'bg-yellow-100 text-yellow-700' : data.fusion.styles.badge === 'Urgent' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
               Status: {data.fusion.styles.badge.toUpperCase()} ({data.fusion.finalRisk})
@@ -77,10 +146,13 @@ export default function ActionPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* 1. Diagnosis */}
           <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Diagnosis</p>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">{data.fusion.summary}</h2>
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">1. Diagnosis</p>
+              {aiAnalysis && <Badge variant="secondary" className="bg-violet-100 text-violet-700 text-[10px]"><Sparkles className="w-3 h-3 mr-1" /> AI Generated</Badge>}
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">{diagnosisTitle}</h2>
             <p className="text-slate-600 leading-relaxed">
-              {data.fusion.longTermAdvice}
+              {diagnosisDetail}
             </p>
           </Card>
 
@@ -99,13 +171,13 @@ export default function ActionPage() {
                 <div>
                   <p className="text-sm text-slate-500 font-medium mb-1">Recommended Action Within</p>
                   <p className="text-3xl font-bold text-slate-900">
-                    {data.fusion.finalRisk === 'RED' ? 'Immediate' : data.fusion.finalRisk === 'ORANGE' ? '4-6 Hours' : '24 Hours'}
+                    {timelineWindow}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-400 font-medium uppercase mb-1">Urgency</p>
                   <p className={`text-sm font-bold ${data.fusion.styles.textColor}`}>
-                    {data.fusion.styles.badge} Priority
+                    {timelineUrgency}
                   </p>
                 </div>
               </div>
@@ -129,7 +201,7 @@ export default function ActionPage() {
                   <Clock className="h-3.5 w-3.5 text-blue-600" />
                 </div>
                 <p className="text-sm text-slate-600 leading-snug">
-                  <span className="font-semibold text-slate-900">Why this timeline?</span> {data.fusion.finalRisk === 'RED' ? 'Immediate action required to prevent complications.' : 'Timely intervention ensures better outcomes.'}
+                  <span className="font-semibold text-slate-900">Why this timeline?</span> {timelineReason}
                 </p>
               </div>
             </div>
@@ -137,20 +209,19 @@ export default function ActionPage() {
 
           {/* 3. Recommended Action */}
           <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">3. Recommended Action</p>
+            <div className="flex justify-between items-start mb-4">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">3. Recommended Action</p>
+              {aiAnalysis && <Badge variant="secondary" className="bg-violet-100 text-violet-700 text-[10px]"><Sparkles className="w-3 h-3 mr-1" /> AI Generated</Badge>}
+            </div>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="bg-emerald-100 p-1 rounded-full mt-0.5">
-                  <Check className="h-3 w-3 text-emerald-600" />
+              {actionList.map((action, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="bg-emerald-100 p-1 rounded-full mt-0.5">
+                    <Check className="h-3 w-3 text-emerald-600" />
+                  </div>
+                  <p className="text-slate-700 font-medium">{action}</p>
                 </div>
-                <p className="text-slate-700 font-medium">{data.fusion.urgentActions}</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="bg-emerald-100 p-1 rounded-full mt-0.5">
-                  <Check className="h-3 w-3 text-emerald-600" />
-                </div>
-                <p className="text-slate-900 font-bold">Book a slot in the care finder.</p>
-              </div>
+              ))}
             </div>
           </Card>
         </div>
