@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -14,37 +16,189 @@ import {
   TestTube,
 } from "lucide-react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts'
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+
+interface StyleData {
+  color: string
+  bg: string
+  bar: string
+  badge: string
+  badgeColor: string
+}
+
+interface MetricData {
+  value: number
+  unit: string
+  status: string
+  styles: StyleData
+}
+
+interface FluidMetricData extends MetricData {
+  phaseAngle: number
+}
+
+interface FusionStyles {
+  borderColor: string
+  gradient: string
+  textColor: string
+  badge: string
+  iconColor: string
+}
+
+interface FusionData {
+  finalRisk: string
+  summary: string
+  urgentActions: string
+  longTermAdvice: string
+  styles: FusionStyles
+}
+
+interface SensorData {
+  urea: MetricData
+  fluid: FluidMetricData
+  heartRate: MetricData
+  spo2: MetricData
+  fusion: FusionData
+}
+
+interface ChartDataPoint {
+  time: number
+  urea: number
+  fluid: number
+  heartRate: number
+  spo2: number
+}
+
+const chartConfig = {
+  urea: {
+    label: "Urea (mg/dL)",
+    color: "#10b981",
+  },
+  fluid: {
+    label: "Fluid (Ratio x100)",
+    color: "#3b82f6",
+  },
+  heartRate: {
+    label: "Heart Rate (bpm)",
+    color: "#ef4444",
+  },
+  spo2: {
+    label: "SPO2 (%)",
+    color: "#06b6d4",
+  },
+} satisfies ChartConfig
+
+const INITIAL_DATA: SensorData = {
+  urea: { 
+    value: 0, unit: "mg/dL", status: "GREEN", 
+    styles: { color: "text-slate-400", bg: "bg-slate-50", bar: "bg-slate-200", badge: "Loading...", badgeColor: "bg-slate-100 text-slate-500" } 
+  },
+  fluid: { 
+    value: 0, unit: "ECW/TBW", phaseAngle: 0, status: "GREEN", 
+    styles: { color: "text-slate-400", bg: "bg-slate-50", bar: "bg-slate-200", badge: "Loading...", badgeColor: "bg-slate-100 text-slate-500" } 
+  },
+  heartRate: { 
+    value: 0, unit: "bpm", status: "GREEN", 
+    styles: { color: "text-slate-400", bg: "bg-slate-50", bar: "bg-slate-200", badge: "Loading...", badgeColor: "bg-slate-100 text-slate-500" } 
+  },
+  spo2: { 
+    value: 0, unit: "%", status: "GREEN", 
+    styles: { color: "text-slate-400", bg: "bg-slate-50", bar: "bg-slate-200", badge: "Loading...", badgeColor: "bg-slate-100 text-slate-500" } 
+  },
+  fusion: {
+    finalRisk: "GREEN",
+    summary: "Initializing system...",
+    urgentActions: "Please wait while we connect to sensors.",
+    longTermAdvice: "",
+    styles: { borderColor: "border-slate-200", gradient: "from-slate-400 to-slate-500", textColor: "text-slate-600", badge: "Initializing", iconColor: "text-white" }
+  }
+}
 
 export default function Dashboard() {
+  const [data, setData] = useState<SensorData>(INITIAL_DATA)
+  const [history, setHistory] = useState<ChartDataPoint[]>([])
+  const [startTime] = useState<number>(Date.now())
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/data')
+
+    eventSource.onmessage = (event) => {
+      try {
+        const newData: SensorData = JSON.parse(event.data)
+        setData(newData)
+        
+        // Update history for chart
+        setHistory(prev => {
+          const now = Date.now()
+          const newPoint: ChartDataPoint = {
+            time: now,
+            urea: newData.urea.value,
+            fluid: newData.fluid.value * 100, // Scale up for visibility on chart
+            heartRate: newData.heartRate.value,
+            spo2: newData.spo2.value
+          }
+          
+          // Keep data for the last 5 minutes to ensure smooth scrolling
+          // The domain logic will handle the visibility (3.75m past, 1.25m future)
+          const windowSize = 5 * 60 * 1000 
+          const cutoff = now - windowSize
+          
+          const newHistory = [...prev, newPoint].filter(point => point.time > cutoff)
+          return newHistory
+        })
+
+      } catch (error) {
+        console.error("Failed to parse sensor data", error)
+      }
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [])
+
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
-      {/* Urgent Action Section */}
+      {/* Urgent Action Section - Fused Analysis */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-800">Critical Alerts</h2>
         </div>
         <Link href="/action" className="block">
-          <Card className="overflow-hidden border-0 shadow-lg relative bg-gradient-to-r from-amber-500 to-orange-600 text-white cursor-pointer hover:shadow-xl transition-shadow">
+          <Card className={`overflow-hidden border-0 shadow-lg relative bg-gradient-to-r ${data.fusion.styles.gradient} text-white cursor-pointer hover:shadow-xl transition-shadow`}>
             <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
             
             <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex-1 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                    <AlertTriangle className="h-6 w-6 text-white" />
+                    <AlertTriangle className={`h-6 w-6 ${data.fusion.styles.iconColor}`} />
                   </div>
                   <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm px-3 py-1 text-xs font-medium rounded-md uppercase tracking-wide">
-                    RTAR Class: Yellow
+                    RTAR Class: {data.fusion.styles.badge}
                   </Badge>
                 </div>
                 
                 <div>
-                  <h3 className="text-3xl font-bold mb-2">URGENT ACTION REQUIRED</h3>
-                  <p className="text-white/90 text-lg">Fluid levels elevated. Dialysis Required immediately.</p>
+                  <h3 className="text-3xl font-bold mb-2">{data.fusion.summary}</h3>
+                  <p className="text-white/90 text-lg">{data.fusion.urgentActions}</p>
                 </div>
               </div>
               
-              <Button className="bg-white text-orange-600 hover:bg-gray-50 border-0 font-bold px-8 py-6 h-auto text-lg shadow-xl shrink-0">
+              <Button className={`bg-white ${data.fusion.styles.textColor} hover:bg-gray-50 border-0 font-bold px-8 py-6 h-auto text-lg shadow-xl shrink-0`}>
                 View Diagnosis & Plan
                 <ChevronRight className="ml-2 h-5 w-5" />
               </Button>
@@ -62,97 +216,101 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Urea Level */}
-          <Card className="p-6 border-0 shadow-sm bg-white relative">
+          <Card className="p-6 border-0 shadow-sm bg-white relative transition-all duration-300">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Urea Level</h3>
               <div className="flex flex-col items-end gap-2">
-                <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
-                  Blue
+                <Badge className={`${data.urea.styles.badgeColor} border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase`}>
+                  {data.urea.styles.badge}
                 </Badge>
-                <div className="bg-blue-50 p-2 rounded-full">
-                  <TestTube className="h-4 w-4 text-blue-500" />
+                <div className={`${data.urea.styles.bg} p-2 rounded-full transition-colors duration-300`}>
+                  <TestTube className={`h-4 w-4 ${data.urea.styles.color}`} />
                 </div>
               </div>
             </div>
             <div className="mt-[-1rem]">
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-slate-900">50</span>
-                <span className="text-sm text-slate-400 font-medium">mg/dL</span>
+                <span className="text-4xl font-bold text-slate-900 tabular-nums">{data.urea.value}</span>
+                <span className="text-sm text-slate-400 font-medium">{data.urea.unit}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1 mb-4">Slight elevation.</p>
-              <div className="h-1 w-full bg-blue-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 w-full" />
+              <p className="text-xs text-slate-500 mt-1 mb-4">Real-time reading</p>
+              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full ${data.urea.styles.bar} w-full transition-colors duration-300`} />
               </div>
             </div>
           </Card>
 
           {/* Fluid Status */}
-          <Card className="p-6 border-0 shadow-sm bg-white relative">
+          <Card className="p-6 border-0 shadow-sm bg-white relative transition-all duration-300">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fluid Status</h3>
               <div className="flex flex-col items-end gap-2">
-                <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">
-                  Blue
+                <Badge className={`${data.fluid.styles.badgeColor} border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase`}>
+                  {data.fluid.styles.badge}
                 </Badge>
-                <div className="bg-blue-50 p-2 rounded-full">
-                  <Droplet className="h-4 w-4 text-blue-500" />
+                <div className={`${data.fluid.styles.bg} p-2 rounded-full transition-colors duration-300`}>
+                  <Droplet className={`h-4 w-4 ${data.fluid.styles.color}`} />
                 </div>
               </div>
             </div>
             <div className="mt-[-1rem]">
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-slate-900">0.39</span>
-                <span className="text-sm text-slate-400 font-medium">ECW/TBW</span>
+                <span className="text-4xl font-bold text-slate-900 tabular-nums">{data.fluid.value.toFixed(2)}</span>
+                <span className="text-sm text-slate-400 font-medium">{data.fluid.unit}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1 mb-4">Mild fluid increase.</p>
-              <div className="h-1 w-full bg-blue-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 w-full" />
+              <p className="text-xs text-slate-500 mt-1 mb-4">Phase Angle: {data.fluid.phaseAngle}</p>
+              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full ${data.fluid.styles.bar} w-full transition-colors duration-300`} />
               </div>
             </div>
           </Card>
 
           {/* Heart Rate */}
-          <Card className="p-6 border-0 shadow-sm bg-white relative">
+          <Card className="p-6 border-0 shadow-sm bg-white relative transition-all duration-300">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Heart Rate</h3>
               <div className="flex flex-col items-end gap-2">
-                <div className="h-[22px]"></div> {/* Spacer for alignment since no badge */}
-                <div className="bg-emerald-50 p-2 rounded-full">
-                  <Heart className="h-4 w-4 text-emerald-500" />
+                <Badge className={`${data.heartRate.styles.badgeColor} border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase`}>
+                  {data.heartRate.styles.badge}
+                </Badge>
+                <div className={`${data.heartRate.styles.bg} p-2 rounded-full transition-colors duration-300`}>
+                  <Heart className={`h-4 w-4 ${data.heartRate.styles.color}`} />
                 </div>
               </div>
             </div>
             <div className="mt-[-1rem]">
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-slate-900">72</span>
-                <span className="text-sm text-slate-400 font-medium">bpm</span>
+                <span className="text-4xl font-bold text-slate-900 tabular-nums">{data.heartRate.value}</span>
+                <span className="text-sm text-slate-400 font-medium">{data.heartRate.unit}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1 mb-4">Sinus Rhythm</p>
-              <div className="h-1 w-full bg-emerald-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-full" />
+              <p className="text-xs text-slate-500 mt-1 mb-4">Real-time reading</p>
+              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full ${data.heartRate.styles.bar} w-full transition-colors duration-300`} />
               </div>
             </div>
           </Card>
 
           {/* SPO2 */}
-          <Card className="p-6 border-0 shadow-sm bg-white relative">
+          <Card className="p-6 border-0 shadow-sm bg-white relative transition-all duration-300">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">SPO<sub>2</sub></h3>
               <div className="flex flex-col items-end gap-2">
-                <div className="h-[22px]"></div> {/* Spacer for alignment since no badge */}
-                <div className="bg-emerald-50 p-2 rounded-full">
-                  <Wind className="h-4 w-4 text-emerald-500" />
+                <Badge className={`${data.spo2.styles.badgeColor} border-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase`}>
+                  {data.spo2.styles.badge}
+                </Badge>
+                <div className={`${data.spo2.styles.bg} p-2 rounded-full transition-colors duration-300`}>
+                  <Wind className={`h-4 w-4 ${data.spo2.styles.color}`} />
                 </div>
               </div>
             </div>
             <div className="mt-[-1rem]">
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-slate-900">97</span>
-                <span className="text-sm text-slate-400 font-medium">%</span>
+                <span className="text-4xl font-bold text-slate-900 tabular-nums">{data.spo2.value}</span>
+                <span className="text-sm text-slate-400 font-medium">{data.spo2.unit}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1 mb-4">Optimal</p>
-              <div className="h-1 w-full bg-emerald-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-full" />
+              <p className="text-xs text-slate-500 mt-1 mb-4">Real-time reading</p>
+              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full ${data.spo2.styles.bar} w-full transition-colors duration-300`} />
               </div>
             </div>
           </Card>
@@ -174,7 +332,6 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Cardiovascular */}
-          {/* Cardiovascular */}
           <Link href="/cardiovascular" className="block">
             <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200 group h-full cursor-pointer">
               <div className="flex justify-between items-start mb-4">
@@ -190,7 +347,6 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          {/* Renal & Fluid */}
           {/* Renal & Fluid */}
           <Link href="/renal" className="block">
             <Card className="p-6 border-l-4 border-l-amber-500 shadow-md bg-amber-50/30 relative overflow-hidden group h-full cursor-pointer">
@@ -211,7 +367,6 @@ export default function Dashboard() {
           </Link>
 
           {/* Respiratory */}
-          {/* Respiratory */}
           <Link href="/respiratory" className="block">
             <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200 group h-full cursor-pointer">
               <div className="flex justify-between items-start mb-4">
@@ -227,7 +382,6 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          {/* Metabolic */}
           {/* Metabolic */}
           <Link href="/metabolic" className="block">
             <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200 group h-full cursor-pointer">
@@ -246,36 +400,116 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Autonomic System & Other Metrics */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link href="/autonomic" className="md:col-span-2 block">
-          <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full cursor-pointer">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="bg-slate-100 p-3 rounded-xl">
-                <Brain className="h-8 w-8 text-slate-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-slate-800">Autonomic System</h3>
-                <p className="text-sm text-slate-500">Nervous system activity</p>
-              </div>
-              <Badge className="ml-auto bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-0">
-                Stable
-              </Badge>
-            </div>
-            <div className="h-24 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100 border-dashed">
-              <span className="text-slate-400 text-sm">Activity Graph Placeholder</span>
-            </div>
-          </Card>
-        </Link>
+      {/* Real-time Charts Section */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800">Real-time Vitals Trends</h2>
+            <p className="text-sm text-slate-500">Live streaming data</p>
+          </div>
+        </div>
 
-        <Card className="p-6 border-0 shadow-sm bg-gradient-to-br from-slate-800 to-slate-900 text-white flex flex-col justify-center items-center text-center">
-           <h3 className="text-lg font-medium text-slate-300 mb-2">Overall Health Score</h3>
-           <div className="text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400">
-             85
-           </div>
-           <p className="text-sm text-slate-400">Improving since yesterday</p>
+        <Card className="p-6 border-0 shadow-sm bg-white">
+          <ChartContainer config={chartConfig} className="h-[400px] w-full">
+            <LineChart
+              accessibilityLayer
+              data={history}
+              margin={{
+                left: 0,
+                right: 0,
+                top: 10,
+                bottom: 10
+              }}
+            >
+              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis 
+                dataKey="time" 
+                type="number"
+                domain={[
+                  (dataMax: number) => {
+                    if (!dataMax || isNaN(dataMax)) return Date.now() - (3.75 * 60 * 1000)
+                    return dataMax - (3.75 * 60 * 1000)
+                  },
+                  (dataMax: number) => {
+                    if (!dataMax || isNaN(dataMax)) return Date.now() + (1.25 * 60 * 1000)
+                    return dataMax + (1.25 * 60 * 1000)
+                  }
+                ]}
+                scale="time"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                tickFormatter={(unixTime) => {
+                  if (!unixTime || isNaN(unixTime)) return ""
+                  return new Date(unixTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                }}
+                stroke="#94a3b8"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="#94a3b8" 
+                fontSize={12} 
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+              />
+              <ChartTooltip 
+                cursor={false} 
+                content={
+                  <ChartTooltipContent 
+                    labelFormatter={(label) => {
+                      if (!label || isNaN(label)) return ""
+                      return new Date(label).toLocaleTimeString()
+                    }} 
+                  />
+                } 
+              />
+              <Line 
+                type="monotone" 
+                dataKey="urea" 
+                stroke="var(--color-urea)" 
+                strokeWidth={2} 
+                dot={false} 
+                activeDot={{ r: 6 }}
+                animationDuration={1000}
+                isAnimationActive={false}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="fluid" 
+                stroke="var(--color-fluid)" 
+                strokeWidth={2} 
+                dot={false} 
+                activeDot={{ r: 6 }}
+                animationDuration={1000}
+                isAnimationActive={false}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="heartRate" 
+                stroke="var(--color-heartRate)" 
+                strokeWidth={2} 
+                dot={false} 
+                activeDot={{ r: 6 }}
+                animationDuration={1000}
+                isAnimationActive={false}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="spo2" 
+                stroke="var(--color-spo2)" 
+                strokeWidth={2} 
+                dot={false} 
+                activeDot={{ r: 6 }}
+                animationDuration={1000}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ChartContainer>
         </Card>
       </section>
+
+      {/* Graphs */}
     </div>
   )
 }
