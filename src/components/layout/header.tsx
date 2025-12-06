@@ -1,14 +1,20 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { 
   Menu, 
-  Bell
+  Bell,
+  ArrowLeft
 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 interface HeaderProps {
   userName: string
 }
 
 export function Header({ userName }: HeaderProps) {
+  const router = useRouter()
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-4 md:hidden">
@@ -19,8 +25,9 @@ export function Header({ userName }: HeaderProps) {
       </div>
 
       <div className="hidden md:block">
-        <h1 className="text-2xl font-bold text-slate-900">Overview</h1>
-        <p className="text-sm text-slate-500">Welcome back, {userName}</p>
+        <Link href="/dashboard" className="font-bold text-2xl text-slate-800 hover:text-slate-600 transition-colors">
+          R.A.D.A.R.
+        </Link>
       </div>
 
       <div className="flex items-center gap-4">
