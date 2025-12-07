@@ -216,7 +216,7 @@ export default function Dashboard() {
           </div>
           <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-0 px-4 py-1.5 text-sm">
             <CheckCircle className="w-4 h-4 mr-2" />
-            4/5 Systems Stable
+            4/4 Systems Stable
           </Badge>
         </div>
 
@@ -241,15 +241,15 @@ export default function Dashboard() {
             <Link href="/renal" className="block">
             <Card className="p-6 border-0 shadow-sm bg-white hover:shadow-md transition-all duration-200 group h-full cursor-pointer">
               <div className="flex justify-between items-start mb-4">
-                <div className="bg-rose-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
-                  <Heart className="h-6 w-6 text-rose-500 fill-rose-500" />
+                <div className="bg-blue-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                  <Droplet className="h-6 w-6 text-blue-500" />
                 </div>
                 <div className="bg-emerald-100 p-1.5 rounded-full">
                   <CheckCircle className="h-4 w-4 text-emerald-600" />
                 </div>
               </div>
-              <h3 className="font-bold text-slate-800 text-lg mb-1 relative z-10">Renal & Fluid</h3>
-              <p className="text-sm text-amber-700 font-medium relative z-10">Attention Required</p>
+              <h3 className="font-bold text-slate-700 text-lg mb-1">Renal & Fluid</h3>
+              <p className="text-sm text-slate-400">Fluid levels stable</p>
             </Card>
           </Link>
 
