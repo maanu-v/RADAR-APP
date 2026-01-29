@@ -27,7 +27,8 @@ export async function POST(req: Request) {
     
     The JSON object MUST have the following fields:
     - "diagnosis": A short, punchy title for the diagnosis (e.g., "Fluid Overload Detected").
-    - "diagnosisDetail": A concise explanation of the findings (max 2 sentences).
+    - "diagnosisDetail": A conversational, patient-friendly explanation (2-3 sentences). It should explain the current state, predict potential risks, and suggest immediate action. 
+      Example style: "Your body is slowly retaining fluid and your urea levels are rising. This combination can stress the heart and lungs in the next 8–10 hours. We recommend limiting fluids now and preparing for early dialysis."
     - "timeline": The recommended time window for action (e.g., "4-6 Hours", "Immediate", "24 Hours").
     - "timelineReason": A short reason for the timeline (e.g., "Risk of pulmonary edema increases significantly after 6 hours.").
     - "urgency": One of "High", "Medium", "Low".

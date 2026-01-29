@@ -12,7 +12,7 @@ interface SimulationKeyframe {
 
 // --- Configuration ---
 
-const SCENARIO_DURATION_MS = 0.5 * 60 * 1000; // 1.5 minutes
+const SCENARIO_DURATION_MS = 0.6 * 60 * 1000; // 1.5 minutes
 
 const KEYFRAMES: SimulationKeyframe[] = [
   { timeMs: 0, fluid: 0.38, urea: 35, hr: 72, spo2: 98 },                               // 0 hr (Baseline)
@@ -99,17 +99,37 @@ export const calculateFusionScore = (ureaRisk: string, fluidRisk: string, hrRisk
   const sHr = getSeverity(hrRisk);
   const sSpo2 = getSeverity(spo2Risk);
 
-  // Weights: HR (0.30), Fluid (0.22), Urea (0.15), SpO2 (0.12)
-  // Note: Weights sum to 0.79, not 1.0. We use the raw sum as per instructions.
-  const score = (sHr * 0.30) + (sFluid * 0.22) + (sUrea * 0.15) + (sSpo2 * 0.12);
-  return parseFloat(score.toFixed(2));
+  // Map HR and SpO2 to "PPG" risk (take the worse of the two)
+  const sPpg = Math.max(sHr, sSpo2);
+  const ppgRisk = REVERSE_SEVERITY_MAP[sPpg];
+
+  const risks = [ureaRisk, fluidRisk, ppgRisk];
+
+  // Rule 1: If any RED -> RED
+  if (risks.includes("RED")) return 4;
+
+  // Rule 2: If any two ORANGE -> ORANGE
+  const orangeCount = risks.filter(r => r === "ORANGE").length;
+  if (orangeCount >= 2) return 3;
+
+  // Rule 3: If ORANGE + YELLOW -> ORANGE
+  const yellowCount = risks.filter(r => r === "YELLOW").length;
+  if (orangeCount >= 1 && yellowCount >= 1) return 3;
+
+  // Rule 4: If any two YELLOW -> YELLOW
+  if (yellowCount >= 2) return 2;
+
+  // Rule 5: Else -> highest severity among the three
+  // (This covers the Green case and single elevated risks)
+  return Math.max(sUrea, sFluid, sPpg);
 };
 
 export const getRiskFromScore = (score: number): string => {
-  if (score >= 3.00) return "RED";
-  if (score >= 2.25) return "ORANGE";
-  if (score >= 1.50) return "YELLOW";
-  // Removed BLUE range (0.75 - 1.49)
+  // Score is now directly the severity level (0-4)
+  if (score >= 4) return "RED";
+  if (score >= 3) return "ORANGE";
+  if (score >= 2) return "YELLOW";
+  // Blue is skipped as per request
   return "GREEN";
 };
 
